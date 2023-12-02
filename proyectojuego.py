@@ -1,12 +1,20 @@
+#Importante tener instalado pygame para poder ejecutar el juego. Pygame me sirvio para agregar musica.
+#Si no se tiene instalado, abrir la terminal y escribir "pip install pygame". Asegurese de estar usando el interprete
+#de python correcto en su entorno de trabajo.
+
 import pygame
 import time
 import sys
 import os
+import random
 
 class Juego:
+    #Constructores. Contienen arte de objetos, inventario, comandos, numero de intentos, limite de objetos,
+    #arrays de objetos en tutorial, biblioteca, baño, dormitorio
+    #Son constructores ya que es importante que permanezcan durante todo el codigo, y sean modificables a lo largo de este.
     def __init__(self):
-        #Implementar un nuevo constructor que guarde por chekpoints las cosas
-
+        self.locationorden = ""
+        self.locations = []
         self.nombre = ""
         self.apellido = ""
         self.genero = ""
@@ -18,12 +26,19 @@ class Juego:
         self.carta = 0
         self.intentos = 6
         self.objetos = []
+        self.objetossala = []
+        self.objetosdormitorio = []
+        self.objetosbaño = []
+        self.objetosbiblioteca = []
         self.inventario = []
+        self.inventariorespaldo1 = []
         self.numerodeobjetosinventario = 0
+        self.numerodeobjetosinventariorespaldo1 = 0
         self.limiteinventario = 5
-        self.comandos = {'g':self.buscar_objetos, 'i':self.revisar_inventario, 'l': self.lectura_carta, 's': self.soltar_objetos,}
+        self.comandos = {'g':self.buscar_objetos, 'i':self.revisar_inventario_tutorial, 'l': self.lectura_carta, 's': self.soltar_objetos,}
         #Poner los comandos hasta arriba
         #Agregar contenido no visto a la carta despues
+        #(Ordenes)
 
         self.artecarta = """
     .:*####%%%%%%@@@@@@@@@@@@@@@@@@@@@@@@@@%%%%%####*-.    
@@ -59,6 +74,9 @@ class Juego:
 -@@@@@%+++++++++++++++++++++++++++++++++++++++++++++#@@@@@-
 :@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@-
         """
+
+        #Poner otro arte para carta anonima
+
         self.artepaquetedechicles = """
                                      .....................................................     
                                      .#=+......................:::::::::::::--------======*..  
@@ -81,7 +99,305 @@ class Juego:
  ..::.=============================================================================:.........  
       ..........................:::::-----------=================================-.....      
         """
-
+        self.artesobrededinero = """                                           
+                                      ......                                      
+                                    ..::--::..                                    
+                                ...:----------:...                                
+                             ...:----------------:...                             
+                          ...:----------------------:...                          
+                      ....:----------------------------:....                      
+                    ...:----------------------------------:...                    
+                  .::----------------------------------------::..                 
+         .......::------------------------------------====================-..     
+         .=+++++*****************++++++++++++++++++++++++++++++++++++++++++..     
+      ...=+++++*****************+++++++++++++++++++++++++++++++++++++++++++..     
+    ...:=+++++=:::::::::::..........................................=++++++:..    
+    :=-=+++++++============++++++++++++++++++++++++++++++++++++++++++++++*+==:.   
+   .::-+*++++===========--------:::::::::::::::::::...............=++++***+-::..  
+   .:---::+*=:......................:++++++-:......................-+**+::---:..  
+   .:------::-=:.................=++++++++++++=:..................-=--:------:..  
+   .:---------::-=:............-+++++++--+++++++-.............:-=-::---------:..  
+   .:------------::-=-:.......-++++++=-...-=+++++=.........:-=-::------------:..  
+   .:---------------::-=-....-++++++..:::=::++++++=......-=-::---------------:..  
+   .:------------------::---:=++++++..-::++++++++++:.:---:-------------------:..  
+   .:---------------------::-+*+=++++-...:=++++++++=--::---------------------:..  
+   .:------------------------::-+*++=++:::..+++***-:-------------------------:..  
+   .:----------------------------:-+*+=::=..**+-:----------------------------:..  
+   .:-------------------------------::-=--==-:-------------------------------:..  
+   .:------------------------------------::----------------------------------:..  
+   .:---------------------------------::-------------------------------------:..  
+   .:------------------------------::----------------------------------------:..  
+   .:---------------------------::-------------------------------------------:..  
+   .:------------------------::----------------------------------------------:..  
+   .:--------------------::--------------------------------------------------:..  
+   .:-----------------::-----------------------------------------------------:..  
+   .:--------------::--------------------------------------------------------:..  
+   .:-----------::-----------------------------------------------------------:..  
+   .:--------::--------------------------------------------------------------:..  
+   .:-----::-----------------------------------------------------------------:..  
+    ..:::------------------------------------------------------------------:..    
+     ........................................................................     
+                                                                                  
+        """
+        self.artevaso = """                     
+                              ........:::::::::......                             
+                   ..-+++====-----------:::::::----::-===+++-..                   
+                   =%%=....                             ...=#%=.                  
+                  .:#..:=*#%%%#*==--::::::::----=+*#%%%%#+:..#-                   
+                   .%:......:-=--------:::::::::::::::....:::#:                   
+                   .%::                                .---+-%.                   
+                   .#::                                .---*:%.                   
+                    +-:                                .---+:*.                   
+                    =+..                               .--====.                   
+                    -#..                               .--+-+-                    
+                    :#..                               .--+-#-                    
+                    :#..                               .--+-#:                    
+                    .#:.                               :-==:#:                    
+                    .#=.:-=+****++==--:::...::--+*####*++++-#.                    
+                    .#**...                           :#*:#=#.                    
+                    .+**%%%###*=:................-=+**##%%#*#.                    
+                     -#+%%--==..::--===========--:.....*#%**+.                    
+                     :#-%%+-+=:.                      .*#%+*-                     
+                     .%-%%*=+=:.                      .+#%=#:                     
+                     .%-%%#=+=:.                      .=#%-%.                     
+                     .*-#%#=+=:                       .=%%-%.                     
+                      ==+%#=+=:                       .-%%-*.                     
+                      -#=%#=+=:.                      ..%*==                      
+                      -%-%%=+=:.                      ..%=*-                      
+                      :%:%%++=:.                      .:%-#-                      
+                      .#=#%=+=:.                      .-%:%:                      
+                      .#*#%===:.                      .=%-#.                      
+                      .***%+==:.                      .*#+#.                      
+                      .-#+%+==:.                      .##**.                      
+                       .%-%++=..           .  ..     .:%+#-                       
+                       .%=#%#****#####%%%%#######****#%%-%.                       
+                        +%*#%%%%#*++===-----==++*#%%%%#=%#.                       
+                        -%*%++##%%#+=-::::--=+*#%%##+=%%#=.                       
+                        :%#%%%%%%%%%%%####%%%%%%%%%%%%%*%-                        
+                        .#%*%%%+.....    ..    ...-#%%###.                        
+                         .-*#*######******##########*#*=.                         
+                               ......::::::.......  ..                                                              
+        """
+        self.artecucaracha = """
+.....................................................%..........................
+...................................................:@=..........................
+...................................................@@...........................
+.............................-@%**=--:............**+...........................
+................................+%#*%%%*.........:%%............................
+.....................................-#*#*.......+@@............................
+.......................................+#*@......**#............................
+........................................+@%*.....#*#............................
+........................................-*%......**#............................
+............::......:*%%%@*@+...........**.......%#@.............*..............
+..............%@@%%%-@%=..-@*#%........=##......@*@.............:#..............
+.............................*%#%:.....##-....:%#*...............*:.............
+..............................:*##@:..#*#.....%#+................:+.............
+...................=#@%##***####%%%####*##%@#%%+................-%..............
+................+@**@%######@@@@@@%*************%#.%%*........:@-...............
+...............:#@#*#%@%@************************#@****#@@-:#%..................
+.............%#*****#%@@%******************%@@@@@**%*****#*.....................
+............=#*******@%*****#@@@@@@%%%@@@#***@@****@*****#%:....................
+.............-@#*#@#****************************@*%*****@@-.-@=.................
+................#%******************************%%#@%@#........%+...............
+..................-+@@%%%******************%%@@=................:%..............
+............................:-++*@%@++%%=.....@*%................*..............
+...............................+%##....%*......#*%-..............%..............
+.............................%#*%......*#-......*#*@.............%..............
+..............-=#%%%@##+++*@*#%:.......:%#........%%@...........................
+.............-.....:+@@@@@@@:...........**@.......#*@...........................
+.........................................@*%......#*@...........................
+.........................................:#*-.....:@@:..........................
+..........................................+*%:.....@#:..........................
+...........................................%@=.....#*-..........................
+..........................................**%:......@%..........................
+..........................................@@.........%*.........................
+..........................................@...........#%........................
+..........................................-.....................................
+        """
+        self.artecepillodedientes = """
+               ...:------:.                                                                    
+       .*@@@@%+*==*+*#%#%##@@.                                                                 
+       .@.*.+:.+.*.-..%-..#.#-                                                                 
+      .-@:#.*:.+.*.-..%-. #-%+.                                                                
+      ..@.%.#..*.*.-..%-. #.%:.                         ...................::::::::::::...     
+      .*@.%.#..*.*.=..%-. #.@@%=...........::-==+*#%@@@@@@@@@@%%%%%%%%%%@@@%%####******@@..    
+     .@:@=%.*.:=.*.=..#-. %:@::::::+@@*+++++++++++=====================================##@.    
+     -#::::=*%@@@%*#*#@@@%*-::::::+##===================================================*@.    
+     .@:-::::::::::::::::::::::==--=@*%+=============**++++======================++*%+=+%*.    
+     .+@@@+-*%@%#+===+#@%+%@@@:...............::=+#%@@@@@@@@@@@@@@@%%%%%#####%%%%@@@@@@@..     
+         .....:--=====-:....                                           ..  ..       ..         
+        """
+        self.arteplaca = """
+         @@@@@@              @@@@              @@@@@@         
+       @@@%**%@@@@@@     @@@@@##@@@@@     @@@@@@%**%@@@       
+     @@@%*=---=+#%@@@@@@@@@%+=---+#@@@@@@@@@%#+=---=*%@@@     
+    @@@*--==*+==------------==++==------------==+*+=--*@@@    
+    @@#=-=*@%%@@%#*==---=+*%@@@@@@%*+=---==+#%@@@%@*=-=#@@    
+     @@#-=+@#--=+*#%@@@@@%#+=----=+#%@@@@@%#*+=--#@+=-#@@@    
+     @@@+-=#%+----------------------------------+%#=-+@@@     
+      @@#-=*@*----------------------------------*@*=-*@@      
+      @@#-=*@*-----------=+*######*+=-----------*@*=-#@@      
+      @@*-=*@*--------+#@@%#**++**#%@@#+--------+@#=-*@@      
+     @@@=-+%%=------*@@#+=----------==#@@*------=%%+-=%@@     
+     @@*-=*@#-----+%@*=------=#%=------=+#+------*@*=-*@@@    
+    @@#--+@%=----*@#=--------%@@%--------=*@*----=%@+--#@@    
+   @@%=-=%%+----+@#=--------#@**@#--------=#@*----+%%+-=%@@   
+  @@@=-=#@*----=%%+--==++*#%@*--*@%#*++==--+%%+----+@#=-=%@@  
+  @@+-=*@#-----+@*=-=%@@%#**+----+**#%@@%+-=*@*-----*@*=-+@@  
+ @@%=-+@%------*@*---=*@%+----------+%@#=---+@#------#@+-=%@@ 
+ @@#-=*@*------*@*-----=#@%=-------%@#=-----+@#------*@*=-*@@ 
+ @@*-=#@+------+@*=-----=%@=-------@%=-----=*@*------+@#=-*@@ 
+ @@*-=*@*------=#%+-----+@%--+%%+--%@+-----+%%=------+@*=-*@@ 
+ @@%-=+@#-------+%%+----*@@@@@**@@@@@*----=%@+-------#@+=-#@@ 
+  @@+-=#@*-------+%%+=--#@#==----==#@#--=+%%+-------+@#=-+@@  
+  @@%=-=%@+-------=#@#+=-=----------=-==#@%=-------+%%+-=%@@  
+   @@#===#@*--------=#@%*==--------==*%@%=--------*@%+==#@@   
+    @@#=-=*@%*--------=+#@@%%####%%@@#+=--------+%@*=-=#@@    
+     @@@*=-=*%@#*=---------=++**++=---------=+#@%*=-=+%@@     
+      @@@%+--=+*%@@@%#+=--------------=+*%@@@%#+=-=+%@@@      
+        @@#+*+=---==+#%@@%*=------=*%@@%#+==---=+*@@@@        
+           @@@@%*+====--=*%@@*--*@@%*=--====+*%@@@@           
+               @@@@@@@#==---+@@@@+---==#@@@@@@@               
+                    @@@@@%*=-====-=+%@@@@@                    
+                        @@@@#=--=#@@@@                        
+                           @@@##@@@                           
+                             @@@@                             
+        """
+        self.artereloj = """
+                                                  
+                .......::::::.....                
+           .=%@@@@@@@%%######%@@@%.               
+           .#@+%++++++++++++++#**@.               
+           .#%+*++++++++++++++##*@.               
+            =@+%#+++++++++++++##*@.               
+            -@+++++++++++++++++**@.               
+            :@*@%+++++++++++++*@*@:               
+            .@#++++++++++++++++++%-               
+            .@###++++++++++++++@*%+..             
+         .#@@@#++++++++++++++++++%@%@+.           
+         .@*=@##%++#%@@@@@@@#*+%%%@-%*.           
+         .##-@@@@%#*+****+===+#%@@@+%*..          
+          +@@%+=#@@%+-::::=*%@@@%+=*@@-.          
+       .-%%++#@*-:.....-=.:::::::+@#==#@-.        
+     .-@%==@%:::::.....%%::.....:-:-%%=-%#.       
+    .*%==%%-:::-@#......:::....+%-:.:=%+=#@:.     
+   .#@=*@=:.....::...................::@%=*#.     
+   +@=*@-:...........................:=:%*=#+     
+  -@+=%=:#@*:.::.................:=%-*-.-@=+@:    
+ .%#=*#:.::-:.:#%=.............:%#-:.:..:#%-%*.   
+ :@+-@+.........:*@#:......:=*%=..::.....+@=+@@@. 
+ -@==@=...........:=@%:..:#@=:..........:=@=-@%@- 
+ -@=+@-=++=..........:##@#:...........:++=@+-%#@= 
+ :@++@=::.:.........:@%:-@@:.............=@=-@#@+ 
+ .@#=@+:............:::...:-:............+@=+%+=. 
+  =%=*#:.................................##-%*.   
+  .#*=%=...-+:.....................-*-..=%=+@:.   
+  .-@++@=:##-......................:-#=-@+=%=..   
+  ..=@++@*:..........................:+@+-%+.     
+    .-@*=#@-:...=+.............*#:..:#%==%=..     
+     ..%@+=@%:.=%:.....:-=......-::+@+-#%:...     
+        :%%+*%%+-.......-*.....:=%@*=#%-..        
+        ..@@@=-=%@@%*-::=+*#@@@@+-=@@@-.          
+         .@*=%@#+=-==++++===---+#@@#-@=.          
+         .@*-+@*@@@@@@@@%%%@@@%*@*@#-%=.          
+         .#@@@%+%*++++++++++++++*+@@@@-.          
+             -@*++++++++++++++++*+@*....          
+             :@*%#++++++++++++++%*%*.             
+             :@*++++++++++++++++*+%*.             
+             :@*#*++++++++++++++####.             
+             .%*#*++++++++++++++++*#.             
+             .#*++++++++++++++++##+%:             
+             .#*@#++++++++++++++++#%.             
+             .%*%#**************%@@*.             
+             .:-----------------:...              
+        """
+        self.artelinterna = """
+.....................................................................
+.....................................-##-............................
+....................................=@*+#@%=.........................
+...................................+@+***+=#@%=......................
+..................................+@+-=*+-+#%+#@%=:..................
+.................................*@+------*#+-=**#%%+:...............
+................................*%=----------=*#*--##%%*-............
+...............................+@@%*--------------%+#==*%@*-.........
+...............................*@+=*@@#------------=--#=%=%#:........
+...............................+@+====*@@#------------=#-%%:.........
+...............................+@+=======*%@#=---------=@%...........
+..............................:%@@@#+=======*%@#+-----=@#............
+.............................-%%--=#@@#*=======+#@%+-+@+.............
+............................-%#------=*@@%*=======+#@@=..............
+...........................-%*----------=*@@@*===*@@#-...............
+..........................-@*---------------+@@@@=...................
+.........................=@*-----------------%#:.....................
+........................*@+----------------=@*.......................
+.......................*@=----------------+@*........................
+.....................:*%=----------------+@+.........................
+....................:#%=----+@@@%=------*@=..........................
+....................%%=----*@=.:@#-----*@=...........................
+..................:@#-----*@=.-@%-----#%-............................
+.................-@#------#%++@#-----#%-.............................
+................=@*--------=**+----=%%:..............................
+...............=@+----------------=%#................................
+..............=@+----------------=%*:................................
+.............*@+----------------=@*..................................
+............#@*----------------=@*...................................
+..........:#@*%@%+------------+@+....................................
+..........*@++++*#@%*=-------*@-.....................................
+..........*%++++++++#%%*=---*%-......................................
+..........:%@#+++++++++*@@##%-.......................................
+............:+@@#+++++++++%%-........................................
+................+@@#+++++@%:.........................................
+...................=%@@@%+...........................................
+.....................................................................
+        """
+        self.artecorbata = """
+..................................................
+.............-*+++++++++++++++-=+++++:............
+.............-*************+-:+*****+:............
+..............=#*********+-:=*******-.............
+...............+*******+=:=+*******=..............
+................+****+=:=+********-...............
+.................:**+:-+*******#=.................
+...................**%@%%%%%%##:..................
+..................=*************..................
+.................:**************=.................
+.................+************+:=:................
+................=***********+:-+*+................
+...............:+*********+:-+****-...............
+...............=********+--+******+...............
+..............:+******+-:=+********-..............
+..............=*****+=:=+**********+:.............
+.............:****+=:=+*************-.............
+.............=#*+=:=+***************=.............
+............:**=:-+******************:............
+............-*--++****************+==-............
+............+-++*****************+:-+*:...........
+...........:#+*****************+-:++*#-...........
+...........=*****************+-:+*****+...........
+...........****************+-:+*******#...........
+..........:#*************+=:=+********#-..........
+..........=************+=:=+***********+..........
+..........***********+=--+*************#..........
+..........%*********+--+***************%..........
+.........:#*******+-:+*****************#-.........
+.........=******+-:=******************+++.........
+.........+****+=:=+*****************+=:-*.........
+.........***+=:=+*****************+=:-+**.........
+.........**=:-+******************+::++**#.........
+.........*:-+******************+-:=+****#.........
+.........*+******************+-:=+******#.........
+.........#*****************+-.=+*********.........
+.........****************+-:=+**********+.........
+.........+**************=:-+***********#-.........
+..........-#**********+:-+**************..........
+............+#******+::+*************+:...........
+.............:+***+::+**************:.............
+...............-*-:=**************:...............
+.................=**************:.................
+...................=**********:...................
+.....................:+*+*+-......................
+        """
+        
         #Cambiar arte de carta cuando ya tengas la linterna
 
     def ejecucion_comandos(self, query):
@@ -91,6 +407,212 @@ class Juego:
         else:
             query = input(f"Comando '{query}' no válido. Introduce otro: ")
             self.ejecucion_comandos(query)
+
+    def gameovercaso1(self):
+        os.system('cls')
+        track1 = "풀리지 않는 의문 Unanswered question.mp3"
+        pygame.mixer.music.load(track1)
+        pygame.mixer.music.play()
+        text = """
+  ▄████  ▄▄▄       ███▄ ▄███▓▓█████     ▒█████   ██▒   █▓▓█████  ██▀███  
+ ██▒ ▀█▒▒████▄    ▓██▒▀█▀ ██▒▓█   ▀    ▒██▒  ██▒▓██░   █▒▓█   ▀ ▓██ ▒ ██▒
+▒██░▄▄▄░▒██  ▀█▄  ▓██    ▓██░▒███      ▒██░  ██▒ ▓██  █▒░▒███   ▓██ ░▄█ ▒
+░▓█  ██▓░██▄▄▄▄██ ▒██    ▒██ ▒▓█  ▄    ▒██   ██░  ▒██ █░░▒▓█  ▄ ▒██▀▀█▄  
+░▒▓███▀▒ ▓█   ▓██▒▒██▒   ░██▒░▒████▒   ░ ████▓▒░   ▒▀█░  ░▒████▒░██▓ ▒██▒
+ ░▒   ▒  ▒▒   ▓▒█░░ ▒░   ░  ░░░ ▒░ ░   ░ ▒░▒░▒░    ░ ▐░  ░░ ▒░ ░░ ▒▓ ░▒▓░
+  ░   ░   ▒   ▒▒ ░░  ░      ░ ░ ░  ░     ░ ▒ ▒░    ░ ░░   ░ ░  ░  ░▒ ░ ▒░
+░ ░   ░   ░   ▒   ░      ░      ░      ░ ░ ░ ▒       ░░     ░     ░░   ░ 
+      ░       ░  ░       ░      ░  ░       ░ ░        ░     ░  ░   ░     
+                                                     ░                           
+        """
+        self.mostrar_arte(text, 0.01)
+        self.enter()
+        text1 = "Agotaste tu numero de intentos sin tener los objetos necesarios en tu inventario."
+        print("\n")
+        self.mostrar_texto(text1)
+        self.enter()
+        orden = input("\n¿Que deseas hacer? Escribe a para reiniciar el caso, b para terminar la partida. ")
+        orden = orden.lower()
+        while orden != "a" and orden != "b":
+            orden = input("\nEscriba bien. ")
+            orden = orden.lower()
+        if orden == "a":
+            os.system('cls')
+            self.auxiliarguardado()
+            self.caso1()
+            #escribir lo que este abajo en ejecucionjuego
+            sys.exit()
+        if orden == "b":
+            os.system('cls')
+            self.inicio()
+            self.asignacion()
+            self.tutorial()
+            self.camino()
+            self.auxiliar1()
+            self.caso1()
+            
+            sys.exit()
+        
+        ##Revisar guardado y reinicio de caso
+        
+    def descripcionbaño(self):
+        text = """
+El lugar exhibe una elegancia simple con azulejos blancos y detalles bien ordenados. La suave luz realza el orden y la limpieza, con toallas dobladas y una agradable fragancia en el aire.
+
+Pero al mirar el espejo sobre el lavamanos, algo parece fuera de lugar. Las imágenes reflejadas se distorsionan sutilmente, creando una sensación de inquietud. En la penumbra, las sombras danzan de manera intrigante, sugiriendo que quizás hay más en este espejo de lo que parece a simple vista.
+        """
+        print("\n")
+        print(text)
+        print("\n")
+
+
+    def cambiar_posicion(self):
+        print("\nLocaciones disponibles:")
+        print(f"{self.locations}")
+        print("\n")
+        self.locationorden = input("Escribe una locacion a la que cambiar: ")
+        while self.locationorden not in self.locations:
+            self.locationorden = input("Escriba bien. ")
+        if self.locationorden == "sala de estar":
+            self.comandos = {'g':self.buscar_objetos_sala, 'i':self.revisar_inventario, 's': self.soltar_objetos, 'p': self.cambiar_posicion,}
+        if self.locationorden == "biblioteca":
+            os.system('cls')
+            print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+            print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+            print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+            print("\n")
+            self.comandos = {'g':self.buscar_objetos_biblioteca, 'i':self.revisar_inventario, 's': self.soltar_objetos, 'p': self.cambiar_posicion,}    
+            query = input("¿Que quieres hacer? Escribe un comando: ")
+            query = query.lower()
+            self.ejecucion_comandos(query)
+            while "carta anonima" not in self.inventario or "sobre de dinero" not in self.inventario or "vaso de cristal" not in self.inventario:
+                if "carta anonima" in self.inventario or "sobre de dinero" in self.inventario or "vaso de cristal" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás mas cerca de resolver este caso. ¿Qué quieres hacer?")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "carta anonima" and "sobre de dinero" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "carta anonima" and "vaso de cristal" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "sobre de dinero" and "vaso de cristal" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if self.intentos <= 0:
+                    self.gameovercaso1()
+                else: 
+                    os.system('cls')
+                    print("\tUbicacion: Biblioteca del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+            os.system.cls()
+            text = "Haz recabado las pistas necesarias. Dirigete con el capitán Fitzgerald."
+            self.mostrar_texto(text)
+            self.enter()
+
+        if self.locationorden == "sala de estar":
+            #Aqui no buscas objetos, sino que hablas con el capitan o con el policia. Desbloqueas conversaciones si traes los objetos
+            #necesarios contigo
+            pass
+        
+        if self.locationorden == "dormitorio":
+            #Puedes interrogar al mayordomo. Este te dice que ese dia era su descanso. Este se pone nervioso si le preguntas por el vaso.
+            #Objetos: vaso, linterna, traje del ministro
+            pass
+        
+        if self.locationorden == "baño":
+            os.system('cls')
+            print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+            print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+            print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+            self.descripcionbaño()
+            self.comandos = {'g':self.buscar_objetos_baño, 'i':self.revisar_inventario, 's': self.soltar_objetos, 'p': self.cambiar_posicion,}    
+            query = input("¿Que quieres hacer? Escribe un comando: ")
+            query = query.lower()
+            self.ejecucion_comandos(query)
+            while "carta anonima" not in self.inventario or "sobre de dinero" not in self.inventario or "vaso de cristal" not in self.inventario:
+                if "carta anonima" in self.inventario or "sobre de dinero" in self.inventario or "vaso de crostañ" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás mas cerca de resolver este caso. ¿Qué quieres hacer?")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "carta anonima" and "sobre de dinero" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "carta anonima" and "vaso de cristal" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if "sobre de dinero" and "vaso de cristal" in self.inventario:
+                    os.system('cls')
+                    print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("Estás a punto de resolver el caso. Sigue recabando pistas. ¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+                if self.intentos <= 0:
+                    self.gameovercaso1()
+                else: 
+                    os.system('cls')
+                    print("\tUbicacion: Baño del departamento del ministro\tHora: 10:30 pm")
+                    print("\nBuscar objetos = g\tRevisar inventario = i\tSoltar objetos = s\tCambiar de locacion = p")
+                    print(f"\nIntentos para buscar objetos restantes = {self.intentos}")
+                    print("\n")
+                    query = input("¿Qué quieres hacer? ")
+                    query = query.lower()
+                    self.ejecucion_comandos(query)
+            os.system.cls()
+            text = "Haz recabado las pistas necesarias. Dirigete con el capitán Fitzgerald."
+            self.mostrar_texto(text)
+            self.enter()
+            #definir comandos con otras funciones, que trabajen con self.objetossala de estar y asi
+            #Tambien inspeccionar objetos a otra funcion, que tenga sus respectivos minijuegis, o no
+
 
     def buscar_objetos(self):
         #if query == '':
@@ -125,6 +647,212 @@ class Juego:
             print("\nNumero de intentos para buscar objetos agotado.")
         #Implementar imagenes del objeto?
 
+    def buscar_objetos_sala(self):
+        pass
+        #minijuego y luego buscar objetos pero con self.objetossala
+
+    def buscar_objetos_dormitorio(self):
+        pass
+
+    def buscar_objetos_baño(self):
+        if self.intentos > 0:
+            self.intentos -= 1
+            if self.espejo():
+                text = "Buscando debajo de la alcantarilla."
+                self.parpadeo(text, 5)
+                print("\nObjetos disponibles: ")
+                print(f"{self.objetosbaño}")
+                orden = input("\nEscribe el nombre del objeto a recoger. Si quieres cancelar, escribe 'c': ")
+                orden = orden.lower()
+                while orden not in self.objetosbaño and orden != "c":
+                    orden = input("Escriba bien: ")
+                    orden = orden.lower()
+                if self.numerodeobjetosinventario <= self.limiteinventario:
+                    if orden != "c":
+                        self.numerodeobjetosinventario +=1
+                        self.objetosbaño.remove(orden)
+                        self.inventario.append(orden)
+                        if orden == "sobre con dinero":
+                            print ("\n")
+                            self.mostrar_arte(self.artesobrededinero, 0.001)
+                            print ("\n\nEs sospechoso...")
+                            self.enter()
+                            print ("\n¿Por qué habria un sobre con dinero escondido aqui?")
+                            self.enter()
+                            return
+                        if orden == "cepillo de dientes":
+                            print("\n")
+                            self.mostrar_arte(self.artecepillodedientes, 0.001)
+                            print("\n\n¿Este cepillo pertenecia al ministro?...")
+                            self.enter()
+                            return
+                        if orden == "cucaracha":
+                            print("\n")
+                            self.mostrar_arte(self.artecucaracha, 0.001)
+                            print("\n\nAsqueroso.")
+                            self.enter()
+                            return
+                    else:
+                        pass
+                else:
+                    print("Tu inventario esta lleno. Tendras que soltar algun objeto para recoger otro.")
+            else:
+                pass        
+        else:
+            print("\nNumero de intentos para buscar objetos agotado.")
+        
+
+
+    def buscar_objetos_biblioteca(self):
+        if self.intentos > 0:
+            self.intentos -= 1
+            if self.jugar_adivina_el_numero():
+                print("\nObjetos disponibles: ")
+                print(f"{self.objetosbiblioteca}")
+                orden = input("\nEscribe el nombre del objeto a recoger. Si quieres cancelar, escribe 'c': ")
+                orden = orden.lower()
+                while orden not in self.objetosbiblioteca and orden != "c":
+                    orden = input("Escriba bien: ")
+                    orden = orden.lower()
+                if self.numerodeobjetosinventario <= self.limiteinventario:
+                    if orden != "c":
+                        self.numerodeobjetosinventario +=1
+                        self.objetosbiblioteca.remove(orden)
+                        self.inventario.append(orden)
+                        if orden == "carta anonima":
+                            print ("\n")
+                            self.mostrar_arte(self.artecarta, 0.001)
+                            print ("\n\nRevisa la carta anonima en tu inventario si quieres leerla.")
+                            self.enter()
+                            return
+                        if orden == "reloj costoso":
+                            print("\n")
+                            self.mostrar_arte(self.artecarta, 0.001)
+                            print ("\n\nReloj marca Tag Heuer.")
+                            self.enter()
+                        if orden == "placa":
+                            print("\n")
+                            self.mostrar_arte(self.placa, 0.001)
+                            print("\n\n¿El ministro tenía una placa?")
+                            self.enter()
+                    else:
+                        pass
+                else:
+                    print("Tu inventario esta lleno. Tendras que soltar algun objeto para recoger otro.")
+            else:
+                pass        
+        else:
+            print("\nNumero de intentos para buscar objetos agotado.")
+        
+
+
+        #Monton de libros tirados y desorden. Y en medio de todo, la caja fuerte. Esto revela que pudo ser abierta recientemente.
+
+    def jugar_adivina_el_numero(self):
+        numero_secreto = random.randint(1, 100)
+        intentos = 0
+        max_intentos = 7
+
+        print("\n\nSera necesario que adivines la contraseña para inspeccionar la caja fuerte. Esta solo admite un numero entre el 1 y 100.")
+        self.enter()
+        print(f"Prueba con diferentes numeros. Llevas contigo un sistema que detectara si nos estamos acercando o no.")
+        self.enter()
+        print(f"Tienes {max_intentos} antes de que la caja fuerte se bloquee. En dicho caso, tendras que volver a intentarlo y gastar otro intento de buscar objetos.")
+        self.enter()
+
+        while intentos < max_intentos:
+            try:
+                intento = int(input("Ingrese la contraseña: "))
+            except ValueError:
+                print("Por favor, ingrese un número válido.")
+                continue  # Vuelve al inicio del bucle para solicitar una entrada válida
+
+            if intento == numero_secreto:
+                print(f"Contraseña correcta. Bienvenido señor Noiré. Aqui estan sus elementos.")
+                return True
+            elif intento < numero_secreto:
+                print(f"La contraseña es mayor. Te quedan {max_intentos-intentos} intentos.")
+            else:
+                print(f"La contraseña es menor. Te quedan {max_intentos-intentos} intentos.")
+
+            intentos += 1
+
+        if intentos == max_intentos:
+            print(f"\nCaja fuerte bloqueada después de {max_intentos} intentos fallidos.")
+            return False
+        
+
+    #Minijuego del espejo. El mensaje correcto es revisa debajo de la alcantarilla. En el espejo aparece con
+    #las silabas cambiadas. Si lo adivinas, puedes buscar los objetos debajo de la alcantarilla y pierdes
+    #un intento. Si no lo adivinas, no puedes revisar y pierdes un intento.    
+    def espejo (self):
+        print("\nEste espejo es bastante extraño....\n")
+        arteespejo = """
+ .+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+. 
+(      ▌ ▐·▪  .▄▄ ·  ▄▄▄· ▄▄▄  ▄▄▄ .    ▄▄▄▄·  ▄▄▄· ·▄▄▄▄  ▄▄▄ . ▐▄▄▄          ·▄▄▄▄  ▄▄▄ .       )
+ )    ▪█·█▌██ ▐█ ▀. ▐█ ▀█ ▀▄ █·▀▄.▀·    ▐█ ▀█▪▐█ ▀█ ██▪ ██ ▀▄.▀·  ·██▪         ██▪ ██ ▀▄.▀·      ( 
+(     ▐█▐█•▐█·▄▀▀▀█▄▄█▀▀█ ▐▀▀▄ ▐▀▀▪▄    ▐█▀▀█▄▄█▀▀█ ▐█· ▐█▌▐▀▀▪▄▪▄ ██ ▄█▀▄     ▐█· ▐█▌▐▀▀▪▄       )
+ )     ███ ▐█▌▐█▄▪▐█▐█ ▪▐▌▐█•█▌▐█▄▄▌    ██▄▪▐█▐█ ▪▐▌██. ██ ▐█▄▄▌▐▌▐█▌▐█▌.▐▌    ██. ██ ▐█▄▄▌      ( 
+(     . ▀  ▀▀▀ ▀▀▀▀  ▀  ▀ .▀  ▀ ▀▀▀     ·▀▀▀▀  ▀  ▀ ▀▀▀▀▀•  ▀▀▀  ▀▀▀• ▀█▄▀▪    ▀▀▀▀▀•  ▀▀▀        )
+ )    ▄▄▌   ▄▄▄·      ▄▄·  ▄▄▄·  ▐ ▄  ▄▄▄· ▄▄▌  ▄▄▄  ▪  ▄▄▄▄▄ ▄▄▄· ▄▄▌  ▄▄▌   ▄▄▄·               ( 
+(     ██•  ▐█ ▀█     ▐█ ▌▪▐█ ▀█ •█▌▐█▐█ ▀█ ██•  ▀▄ █·██ •██  ▐█ ▀█ ██•  ██•  ▐█ ▀█                )
+ )    ██▪  ▄█▀▀█     ██ ▄▄▄█▀▀█ ▐█▐▐▌▄█▀▀█ ██▪  ▐▀▀▄ ▐█· ▐█.▪▄█▀▀█ ██▪  ██▪  ▄█▀▀█               ( 
+(     ▐█▌▐▌▐█ ▪▐▌    ▐███▌▐█ ▪▐▌██▐█▌▐█ ▪▐▌▐█▌▐▌▐█•█▌▐█▌ ▐█▌·▐█ ▪▐▌▐█▌▐▌▐█▌▐▌▐█ ▪▐▌               )
+ )    .▀▀▀  ▀  ▀     ·▀▀▀  ▀  ▀ ▀▀ █▪ ▀  ▀ .▀▀▀ .▀  ▀▀▀▀ ▀▀▀  ▀  ▀ .▀▀▀ .▀▀▀  ▀  ▀               ( 
+(                                                                                                 )
+ "+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+"+.+" 
+        """
+        self.mostrar_arte(arteespejo, 0.001)
+        self.enter()
+        print("\nNo tiene nada de extraño. Mas bien contiene un mensaje cifrado. ¿Eres capaz de descifrarlo?")
+        query = input("\nEscribe el mensaje descifrado: ")
+        query = query.lower()
+        if query == "revisa debajo de la alcantarilla":
+            print("\nMensaje descifrado.")
+            self.enter()
+            os.system('cls')
+            return True
+        else: 
+            print("\nMensaje incorrecto.")
+            self.enter()
+            os.system('cls')
+            return False
+
+    def hablarconcapitan(self):
+        pass
+
+    def interrogarmayordomo(self):
+        pass
+
+
+
+    #Se te dan pistas sobre los objetos que debes de tomar. como el vaso de agua.
+
+    def revisar_inventario_tutorial(self):
+        print("\nObjetos en el inventario:")
+        print(f"{self.inventario}")
+        print("\n")
+        print(f"Numero de objetos en el inventario: {self.numerodeobjetosinventario} \tLimite de objetos del inventario: 5")
+        print("\n¿Deseas revisar algún objeto del inventario?")
+        invorden = input("Escribe el nombre del objeto para revisarlo o 'c' para cancelar: ")
+        invorden = invorden.lower()
+        while invorden not in self.inventario and invorden != "c":
+            invorden = input("Escriba bien: ")
+            invorden = invorden.lower()
+        if invorden == "carta":
+            self.mostrar_arte(self.artecarta, 0.001)
+            print("\nLas ultimas palabras que te dejo el ministro.")
+            print("\nPresiona enter para continuar.")
+            self.enter()
+            return
+        elif invorden == "paquete de chicles":
+            self.mostrar_arte(self.artepaquetedechicles, 0.001)
+            print("\nUn paquete de chicles comun y corriente.")
+            print("\nPresiona enter para continuar.")
+            self.enter()
+        else:
+            return
+        
     def revisar_inventario(self):
         print("\nObjetos en el inventario:")
         print(f"{self.inventario}")
@@ -138,12 +866,41 @@ class Juego:
             invorden = invorden.lower()
         if invorden == "carta":
             self.mostrar_arte(self.artecarta, 0.001)
-            print("\nPresiona enter para continuar.")
-            self.enter()
+            print("\nLas ultimas palabras que te dejo el ministro.")
+            ordencarta = input("\nPresiona l para leer la carta o c para continuar: ")
+            ordencarta = ordencarta.lower()
+            while ordencarta != "c" and ordencarta != "l":
+                ordencarta = input("Escriba bien: ")
+                ordencarta = ordencarta.lower()
+            if ordencarta == "l":
+                self.lectura_carta()
+            else:
+                pass
+                
+
             return
         elif invorden == "paquete de chicles":
             self.mostrar_arte(self.artepaquetedechicles, 0.001)
-            print("\nPresiona enter para continuar.")
+            print("\nUn paquete de chicles comun y corriente.")
+            self.enter()
+        elif invorden == "carta anonima":
+            self.mostrar_arte(self.artecarta, 0.001)
+            print("\nUna carta dejada por un desconocido.")
+            ordencarta = input("\nPresiona l para leer la carta o c para continuar: ")
+            while ordencarta != "c" and ordencarta != "l":
+                ordencarta = input("Escriba bien: ")
+                ordencarta = ordencarta.lower()
+            if ordencarta == "l":
+                self.lecturacartaanonima()
+            else:
+                pass
+        elif invorden == "cucaracha":
+            self.mostrar_arte(self.artecucaracha, 0.001)
+            print("\nAsqueroso")
+            self.enter()
+        elif invorden == "cepillo de dientes":
+            self.mostrar_arte(self.artecepillodedientes, 0.001)
+            print("\n¿Será que este cepillo le pertenecía al ministro?")
             self.enter()
         else:
             return
@@ -163,7 +920,6 @@ class Juego:
         else:
             return
         
-
     
 
     def lectura_carta(self):
@@ -221,13 +977,38 @@ Ministro de Justicia de Noirville
             pass
         #Hacer que si se lleva una linterna consigo, la carta tenga un mensaje oculto.
 
+    def lecturacartaanonima(self):
+        os.system('cls')
+        text = """
+Estimado Capitán Fitzgerald.
+
+Espero que esta carta encuentre su camino a sus manos, ya que la información que estoy a punto de revelar es de suma importancia para la integridad del departamento y la seguridad de todos.
+
+Primero que todo, permítame presentarme como un miembro leal del departamento. Mi conciencia no me permite mantener en secreto lo que sé. No es fácil traicionar la confianza de aquellos con los que he servido, pero la verdad debe salir a la luz.
+
+He descubierto una red de conspiraciones que involucra a ciertos individuos dentro del departamento. Nombres como la secretaria del ministro, Victoria Ramos y el contador Arthur Mitchell, residentes de este edificio, están implicados en actividades que comprometen nuestra misión y la seguridad de la ciudad. Detrás de las apariencias, hay una trama más grande que se extiende más allá de lo que podemos imaginar.
+
+La información que estoy proporcionando puede poner mi vida en peligro, pero estoy dispuesto a arriesgarme por la verdad. Se avecinan eventos que amenazan con socavar la integridad de nuestro trabajo. Preparémonos para lo que está por venir.
+
+Le ruego, Capitán, que actúe con extrema cautela y discreción al abordar este asunto. La verdad está ahí afuera, pero la lealtad y la traición se entrelazan en formas inesperadas.
+
+Atentamente,
+
+Un aliado en las sombras.
+        """
+        self.mostrar_texto(text)
+        print("\n\n\tPresiona enter 3 veces para continuar")
+        self.enter()
+        self.enter()
+        self.enter()
+
 
     #Funcion para mostrar texto
     def mostrar_texto(self, texto):
         for char in texto:
             sys.stdout.write(char)
             sys.stdout.flush()
-            time.sleep(0.01)
+            time.sleep(0.001)
             #0.03 el ideal
 
     #Funcion para mostrar arte
@@ -238,9 +1019,9 @@ Ministro de Justicia de Noirville
             time.sleep(tiempo)
 
     #Funcion para parpadeo del texto
-    def parpadeo(self, texto):
+    def parpadeo(self, texto, limite):
         tiempo_inicio = time.time()
-        tiempo_limite = 3  # segundos
+        tiempo_limite = limite  # segundos
 
         while time.time() - tiempo_inicio < tiempo_limite:
             sys.stdout.write(f"\r{texto} ")
@@ -255,7 +1036,7 @@ Ministro de Justicia de Noirville
         comandoenter = input()
         while comandoenter != '':
             textoenter = "Presiona enter para continuar."
-            self.parpadeo(textoenter)
+            self.parpadeo(textoenter, 3)
             comandoenter = input()
 
 
@@ -313,7 +1094,7 @@ Ministro de Justicia de Noirville
 
     def asignacion(self):
         text1 = "Comienza tu aventura."
-        self.parpadeo(text1)
+        self.parpadeo(text1, 3)
         print("\n¿Cual es tu nombre?")
         p.nombre = input()
         print("\n¿Cual es tu apellido?")
@@ -339,7 +1120,7 @@ Ministro de Justicia de Noirville
         self.mostrar_texto(text2)
         print("\n")
         textoenter = "Presiona enter para continuar."
-        self.parpadeo(textoenter)
+        self.parpadeo(textoenter, 3)
         self.enter()
         if self.genero == "h":
             text3 = f"Capitán Fitzgerald: Bienvenido, {p.apellido}. Pasa por favor. Lamento llamarte para un caso tan violento justo despues de tu graduación. Parece que esta ciudad no te deja descansar."
@@ -485,6 +1266,8 @@ Ministro de Justicia de Noirville
         pygame.mixer.music.stop()
         os.system('cls')
 
+        self.comandos = {'g':self.buscar_objetos, 'i':self.revisar_inventario, 's': self.soltar_objetos,}
+
         track3 = ("The last Samurai Soundtrack, con sonido de lluvia  Meditación.mp3")
         pygame.mixer.music.load(track3)
         pygame.mixer.music.play()
@@ -579,16 +1362,117 @@ Ministro de Justicia de Noirville
         return
     
     def camino(self):
-        track1 = "살인 계획 (A Murder Plan).mp3"
-
+        track1 = "x2mate.com - Sirena de Policia (efecto de Sonido) (320 kbps).mp3"
         pygame.mixer.music.load(track1)
         pygame.mixer.music.play()
+        patrulla = """
+...............................................................................................
+...............................................................................................
+.............................................:##+*####-........................................
+.............................................%++++****%........................................
+......................................:=+**##%@@@@@%%%%##**+==-:+%*:...........................
+....................................:#...........+.:::------..    ..%:.........................
+...................................:+.:*.......#:+-.........:*...   .+-........................
+..................................--.-+....:--=#:+-....:--===+*.    ..=-.......................
+.................................=:.=+..:-=====#:+-..:========+:.   ..:+:......................
+................................*:.+=.:========#:+=.-==========#.. .::::*-.....................
+...............................#-:+::==========#:*==============%..::::::*-....................
+.............................:%-:*@%@==========#-*===============+.:::::::+-...................
+............................:#::####%*=========#-*===============+*::::::::=-..................
+...........................:*::%%%%%@==========@-*================*-::::::::+=.................
+.....................::*@@#::::::::::::::::::::::*:::::::::::::::::::::::::::*%%%%%@@@*:.......
+...............:=*@%####**+.                    .+       .....              .=##########@:.....
+..........*#%%#********###..                    .+  .......::......          -#********##+.....
+........-@################  -**-=**.*=:*.**+=*+..+  ...::::::::::..          .##########@+.....
+........#--*%#############  -#:#*+#-#=:#+#:#*#-..+    ..::::::::...          .########%%*=.....
+.......++=*%##############  -#. *+#:#+:#+#:#*#...+    ..::::::::...          .########%+*-.....
+......:#=*%###############...:. .-:.::.:.:-.:::..+  ...::::::::::.............#######%#+*-.....
+....:+%%%########%@%%####%%*..                  .+  ... ...::.  ..-#%%####%%*:#######%++#-.....
+..+#+++++++*###@#############%..                .+       .......*%############%%#####%%%%:.....
+..%##########%%###@-.....:@#####.            .. .+....::::::::=@###@+......#%###@##########%+..
+..@#####%%%%%%##%:........::%###*        .....:::*:::::::::::-@##%+.........:*%##@########%%@..
+..#%%%%%%%%%@##@:...:*%*-::::%##%-.....::::::::::*:::::::::::###%=....=%#-::::+###%##%%%%%%%*..
+..=%%%%%%%%%%##*....%%%%@-:::+###*:::::::::::::::*:::::::::::%##@....*%%%%*:::-@##@%%%%%%%%%:..
+..:%%%%%%%%%%###....*%%%%::::+##%@%%%%%%%%%%%%%%%@%%%%%%%%%%%@##@....=@%%@-:::=%##@%%%%%%%%#...
+...#%%%%%%%%@##%=..:::::::::-@##@%%%%%%%%%%%%%%%%@%%%%%%%%%%%@###+...:::::::::###%%%%%%%%%@:...
+............:@##%*:::::::::=%##%=.............................#####:::::::::-%###*.............
+.............:%###%%*=-=*%%###@:...............................*%###%#+==+#%###%=..............
+...............:%%##########@=..................................:#%##########@*................
+..................:+%@@@@*:........................................:-#@@@@#-...................
+...............................................................................................
+...............................................................................................
+        """
+        self.parpadeo(patrulla, 7)
+        textoenter = "Presiona enter 3 veces para continuar."
+        self.parpadeo(textoenter, 3)
+        self.enter()
+        self.enter()
+        self.enter()
+        pygame.mixer.music.stop()
+        os.system('cls')
+    
+    def guardadoprev1(self):
+        self.inventariorespaldo1 = self.inventario
+        self.numerodeobjetosinventariorespaldo1 = self.numerodeobjetosinventario
+
+    def auxiliar1(self):
+        self.inventario.append("carta")
+        self.numerodeobjetosinventario = 1
+
+    def auxiliarguardado(self):
+        self.inventario = self.inventariorespaldo1
+        self.numerodeobjetosinventario = self.numerodeobjetosinventariorespaldo1
+        self.locations.remove("sala de estar")
+        self.locations.remove("dormitorio")
+        self.locations.remove("baño")
+        self.locations.remove("biblioteca")
+        self.objetosbiblioteca.remove("carta anonima")
+        self.objetosbiblioteca.remove("reloj costoso")
+        self.objetosbiblioteca.remove("placa")
+        self.objetosbaño.remove("sobre con dinero")
+        self.objetosbaño.remove("cepillo de dientes")
+        self.objetosbaño.remove("cucaracha")
+        self.objetosdormitorio.remove("vaso de cristal")
+        self.objetosdormitorio.remove("linterna")
+        self.objetosdormitorio.remove("corbata")
+
+    def caso1(self):
+        self.guardadoprev1()
+        track1 = "The Clue.mp3"
+        pygame.mixer.music.load(track1)
+        pygame.mixer.music.play(-1)
+        self.intentos = 5
+        self.locations.append("sala de estar")
+        self.locations.append("dormitorio")
+        self.locations.append("baño")
+        self.locations.append("biblioteca")
+        self.objetosbiblioteca.append("carta anonima")
+        self.objetosbiblioteca.append("reloj costoso")
+        self.objetosbiblioteca.append("placa")
+        self.objetosbaño.append("sobre con dinero")
+        self.objetosbaño.append("cepillo de dientes")
+        self.objetosbaño.append("cucaracha")
+        self.objetosdormitorio.append("vaso de cristal")
+        self.objetosdormitorio.append("linterna")
+        self.objetosdormitorio.append("corbata")
+        #self.objetossala.append("")
+        #Meter dialogos
+        self.comandos = {'g':self.buscar_objetos, 'i':self.revisar_inventario, 'l': self.lectura_carta, 's': self.soltar_objetos, 'p': self.cambiar_posicion,}
+        text1 = input("Escribe 'p' para elegir una locación en la que empezar: ")
+        while text1 != 'p':
+            text1 = input("\nElige una locacion con la que empezar. Escribe 'p'. ")
+        self.ejecucion_comandos(text1)
+        
+    #Al final del caso se descubre una conspiración que se resuelve en el siguiente caso
+
 
     def ejecucion_juego(self):
-        self.inicio()
-        self.asignacion()
-        self.tutorial()
-        self.camino()
+        #self.inicio()
+        #self.asignacion()
+        #self.tutorial()
+        #self.camino()
+        self.auxiliar1()
+        self.caso1()
         
         
 
@@ -604,3 +1488,5 @@ p.ejecucion_juego()
 #Avanzar, tomar objetos, soltar objetos, etc.
 
 #Comandos: Agarrar o soltar objetos. Interrogar personas.
+
+#Propuesta para final: que las huellas en el vaso sean del mayordomo, pero no haya dicho nada porque estaba siendo amenazado.
