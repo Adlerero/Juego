@@ -2188,11 +2188,10 @@ Finalmente, para sellar su maquinación, colocó un sobre con dinero procedente 
        
 
     def ejecucion_juego(self):
-        #self.inicio()
-        #self.asignacion()
-        #self.tutorial()
-        #self.camino()
-        self.auxiliar1()
+        self.inicio()
+        self.asignacion()
+        self.tutorial()
+        self.camino()
         self.caso1()
         
         
